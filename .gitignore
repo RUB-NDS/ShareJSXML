@@ -5,3 +5,6 @@ test/*.js
 test/**/*.js
 node_modules
 .idea
+webclient
+package.json
+lib
