@@ -7,15 +7,16 @@ module.exports = {
 	db: {
 		// DB type. Options are 'redis', 'couchdb' or 'none'. 'redis' requires the
 		// redis npm package.
+                type: 'none'
     //
     // If you don't want a database, you can also say db: null. With no database,
     // all documents are deleted when the server restarts.
 
     // By default, sharejs tries to use the redis DB backend.
-		type: 'redis',
+		//type: 'redis',
    
 		// The prefix for database entries
-		prefix: 'ShareJS:',
+		//prefix: 'ShareJS:',
 
 		// The hostname, port and options to pass to redis.
 		// null lets the database decide - redis by default connects to localhost port 6379.
@@ -82,4 +83,4 @@ module.exports = {
 	//auth: function(client, action) {
 	//	action.allow();
 	//}
-}
+};
