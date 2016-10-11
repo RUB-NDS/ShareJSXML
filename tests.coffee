@@ -21,14 +21,14 @@ modules = [
   'types/html'
   'types/html-api'
 
-#  'db'
+  'db'
   'model'
   'useragent'
   'events'
-#  'rest'
+  'rest'
   'rest_base'
-#  'browserchannel'
-#  'sockjs'
+  'browserchannel'
+  'sockjs'
   'websocket'
 
   'microevent'
