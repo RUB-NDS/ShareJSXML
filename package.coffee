@@ -3,11 +3,11 @@
 # Compile with "cake package"
 
 module.exports =
-  name: "share"
+  name: "ShareJSXML"
 
   # Change version with "cake [-V newversion] bump"
-  version: "0.6.3"
-  description: "A database for concurrent document editing"
+  version: "0.9.23"
+  description: "A database for concurrent XML document editing"
   keywords: [
   	"operational transformation"
   	"ot"
@@ -15,11 +15,12 @@ module.exports =
   	"collaborative"
   	"database"
   	"server"
+    "XML"
   ]
 
   homepage: ""
 
-  author: "Joseph Gentle <josephg@gmail.com>"
+  author: "Joseph Gentle <josephg@gmail.com> and Dennis Felsch <dennis.felsch@ruhr-uni-bochum.de>"
 
   dependencies:
     # Transports
@@ -36,10 +37,13 @@ module.exports =
     request: ">= 2.1.1"
 
     # Prevent upgrade failures like v1.3. Bump this when tested.
-    "coffee-script": "<1.7"
+    "coffee-script": "~1.8.x"
 
     # Useragent hashing
     hat: "*"
+    
+    #XML parsing and serializing
+    xmldom: "0.1.19"
 
   # Developer dependencies
   devDependencies:
@@ -54,7 +58,7 @@ module.exports =
     shelljs: "*"
 
     # Javascript compression
-    "uglify-js": "~1"
+    "uglify-js": "*"
 
     # SockJS
     "websocket": "*"
@@ -77,7 +81,7 @@ module.exports =
   licenses: [
     type: "MIT"
   ]
-
+  
   repository:
     type: "git"
-    url: "http://github.com/josephg/sharejs.git"
+    url: "https://github.com/RUB-NDS/ShareJSXML"

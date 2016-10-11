@@ -122,7 +122,7 @@ class Connection
       else
         @lastSentDoc = docName
 
-    #console.warn 'c->s', data
+    @emit 'send', data
     data = JSON.stringify(data) if socketImpl in ['sockjs', 'websocket']
     @socket.send data
 

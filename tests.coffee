@@ -16,15 +16,19 @@ modules = [
   'types/text-api'
   'types/json'
   'types/json-api'
+  'types/xml'
+  'types/xml-api'
+  'types/html'
+  'types/html-api'
 
-  'db'
+#  'db'
   'model'
   'useragent'
   'events'
-  'rest'
+#  'rest'
   'rest_base'
-  'browserchannel'
-  'sockjs'
+#  'browserchannel'
+#  'sockjs'
   'websocket'
 
   'microevent'
@@ -32,7 +36,7 @@ modules = [
   'client'
 
   # These tests are currently flakey.
-#  'integration'
+  #  'integration'
 ]
 
 exports[module] = require "./test/#{module}" for module in modules

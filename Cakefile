@@ -27,49 +27,43 @@ task 'test', 'Run all tests', (options) ->
 # This is only needed to be able to refer to the line numbers of crashes
 task 'build', 'Build the .js files', ->
   console.log 'Compiling Coffee from src to lib'
-  exec "coffee --compile --bare --output lib/ src/"
+  exec "coffee --compile --output lib/ src/"
   invoke 'package'
 
 task 'package', 'Convert package.coffee to package.json', ->
-  pkgInfo = require './package.coffee'
-
+  exec "coffee --compile --bare package.coffee"
+  pkgInfo = require './package.js'
   JSON.stringify(pkgInfo, null, 2).to 'package.json'
-
+  exec "rm package.js"
 
 makeUgly = (infile, outfile) ->
-  # Uglify compile the JS
-  source = cat infile
-
-  {parser, uglify} = require 'uglify-js'
-
-  opts =
-    defines:
-      WEB: ['name', 'true']
-
-  ast = parser.parse source
-  ast = uglify.ast_lift_variables ast
-  ast = uglify.ast_mangle ast, opts
-  ast = uglify.ast_squeeze ast
-  code = uglify.gen_code ast
-
-  smaller = Math.round((1 - (code.length / source.length)) * 100)
-
-  code.to outfile
-
-  console.log "Uglified: #{smaller}% smaller (#{code.length} bytes} written to #{outfile}"
+  uglify = require('uglify-js')
+  code = uglify.minify(infile).code
+  fs.writeFileSync(outfile, code)
+  console.log("Minified " + outfile)
 
 expandNames = (names) -> ("src/#{c}.coffee" for c in names).join ' '
 
 compile = (filenames, dest) ->
   filenames = expandNames filenames
   # I would really rather do this in pure JS.
-  exec "coffee -j #{dest}.uncompressed.js -c #{filenames}"
+  exec "cat #{filenames} | coffee --compile --stdio > #{dest}.uncompressed.js"
   console.log "Uglifying #{dest}"
   makeUgly "#{dest}.uncompressed.js", "#{dest}.js"
 
 buildtype = (name) ->
-  filenames = ['types/web-prelude', "types/#{name}"]
-
+  filenames = ['types/web-prelude']
+  
+  if name is 'xml' or name is 'html'
+    filenames.push "types/xmlclass"
+    filenames.push "types/xmlapiclass"
+  
+  filenames.push "types/#{name}"
+  
+  if name is 'html'
+    filenames.push "types/xml"
+    filenames.push "types/xml-api"
+  
   if ls "src/types/#{name}-api.coffee"
     filenames.push "types/#{name}-api"
 
@@ -100,6 +94,8 @@ task 'webclient', 'Build the web client into one file', ->
   buildtype 'json'
   buildtype 'text-tp2'
   buildtype 'text2'
+  buildtype 'xml'
+  buildtype 'html'
 
   # TODO: This should also be closure compiled.
   extrafiles = expandNames extras
@@ -123,16 +119,16 @@ task 'bump', 'Increase the patch level of the version, -V is optional', (options
     version = versions.join '.'
   console.log "New version is #{version}"
 
-  throw new Error "Needs git" if not which "git"
-  if exec("git status --porcelain").output.match /^ M /m
-    throw new Error "git status must be clean"
+#  throw new Error "Needs git" if not which "git"
+#  if exec("git status --porcelain").output.match /^ M /m
+#    throw new Error "git status must be clean"
 
   for file in ["package.coffee", "src/index.coffee", "src/client/web-prelude.coffee"]
     sed '-i', oldVersion, version, file
 
   invoke "package"
   invoke "webclient"
-  exec "git commit -a -m 'Bump to #{version}'"
+#  exec "git commit -a -m 'Bump to #{version}'"
 
 #task 'lightwave', ->
 # buildclosure ['client/web-prelude', 'client/microevent', 'types/text-tp2'], 'lightwave'

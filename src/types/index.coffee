@@ -15,5 +15,8 @@ register './text-tp2'
 
 register './json'
 
+register './xml'
+register './html'
+
 register './etherpad'
 register './etherpad-api'

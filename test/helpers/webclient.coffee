@@ -5,7 +5,7 @@
 # From time to time, its worth making sure the uncompressed code also works.
 # I can't be bothered making it run all the tests on uncompressed code every time though -
 # its too slow.
-TEST_UNCOMPRESSED = false
+TEST_UNCOMPRESSED = true
 
 fs = require 'fs'
 
@@ -13,7 +13,7 @@ window = {}
 window.io = require 'socket.io-client'
 window.BCSocket = require('browserchannel').BCSocket
 
-for script in ['share', 'json']
+for script in ['share', 'json', 'xml', 'html']
   script = "#{script}.uncompressed" if TEST_UNCOMPRESSED
   code = fs.readFileSync("#{__dirname}/../../webclient/#{script}.js", 'utf8')
 
