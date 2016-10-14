@@ -50,6 +50,7 @@ compile = (filenames, dest) ->
   exec "cat #{filenames} | coffee --compile --stdio > #{dest}.uncompressed.js"
   console.log "Uglifying #{dest}"
   makeUgly "#{dest}.uncompressed.js", "#{dest}.js"
+  #exec "rm #{dest}.uncompressed.js"
 
 buildtype = (name) ->
   filenames = ['types/web-prelude']
