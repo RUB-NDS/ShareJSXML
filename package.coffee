@@ -3,7 +3,7 @@
 # Compile with "cake package"
 
 module.exports =
-  name: "ShareJSXML"
+  name: "sharejsxml"
 
   # Change version with "cake [-V newversion] bump"
   version: "0.9.23"
