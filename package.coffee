@@ -58,7 +58,7 @@ module.exports =
     shelljs: "*"
 
     # Javascript compression
-    "uglify-js": "*"
+    "uglify-js": "~2.7"
 
     # SockJS
     "websocket": "*"

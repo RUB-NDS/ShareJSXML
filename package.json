@@ -30,7 +30,7 @@
     "optimist": ">= 0.2.4",
     "nodeunit": "*",
     "shelljs": "*",
-    "uglify-js": "*",
+    "uglify-js": "~2.7",
     "websocket": "*"
   },
   "engine": "node >= 0.6",

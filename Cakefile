@@ -91,6 +91,7 @@ extras = [
 ]
 
 task 'webclient', 'Build the web client into one file', ->
+  exec "mkdir -p webclient" 
   compile client, 'webclient/share'
   buildtype 'json'
   buildtype 'text-tp2'
