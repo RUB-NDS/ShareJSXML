@@ -1,0 +1,56 @@
+{
+  "name": "sharejsxml",
+  "version": "0.9.23",
+  "description": "A database for concurrent XML document editing",
+  "keywords": [
+    "operational transformation",
+    "ot",
+    "concurrent",
+    "collaborative",
+    "database",
+    "server",
+    "XML"
+  ],
+  "homepage": "",
+  "author": "Joseph Gentle <josephg@gmail.com> and Dennis Felsch <dennis.felsch@ruhr-uni-bochum.de>",
+  "dependencies": {
+    "sockjs": ">= 0.3.1",
+    "socket.io": "~0.8",
+    "socket.io-client": "~0.8",
+    "browserchannel": "~1",
+    "ws": "~1",
+    "connect": "<3.x",
+    "request": ">= 2.1.1",
+    "coffee-script": "~1",
+    "hat": "*",
+    "xmldom": "0.1.19"
+  },
+  "devDependencies": {
+    "express": "~ 3.x",
+    "optimist": ">= 0.2.4",
+    "nodeunit": "*",
+    "shelljs": "*",
+    "uglify-js": "*",
+    "websocket": "*"
+  },
+  "engine": "node >= 0.6",
+  "main": "index.js",
+  "bin": {
+    "sharejs": "bin/sharejs",
+    "sharejs-exampleserver": "bin/exampleserver"
+  },
+  "scripts": {
+    "build": "cake build",
+    "test": "cake test",
+    "prepublish": "cake webclient"
+  },
+  "licenses": [
+    {
+      "type": "MIT"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RUB-NDS/ShareJSXML"
+  }
+}
