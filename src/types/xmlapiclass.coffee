@@ -119,9 +119,8 @@ class XMLAPIClass
         for i in to_remove
           @_listeners.splice i, 1
           
-    @on 'remoteop', (op) ->
+    @on 'remoteop', (op) -> # op has already been applied
       @_ensureDOMexists()
-      @type.apply2DOM(@dom, op)
       for c in op
         for {path, event, cb} in @_listeners
           if @type.pathMatches(path, c.p[...-1])
