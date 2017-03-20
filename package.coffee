@@ -6,7 +6,7 @@ module.exports =
   name: "sharejsxml"
 
   # Change version with "cake [-V newversion] bump"
-  version: "0.9.23"
+  version: "0.9.24"
   description: "A database for concurrent XML document editing"
   keywords: [
   	"operational transformation"
