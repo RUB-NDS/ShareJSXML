@@ -26,52 +26,50 @@ module.exports =
     
     test.done()
     
-  'traverseXMLTree() gives sane results': (test) ->
+  '_selectSingle() gives sane results': (test) ->
     doc = new Doc '<foo>abc<p><bar>xyz</bar></p>def<p>456</p></foo>'
     dom = doc.getReadonlyDOM()
     
-    test.deepEqual [], doc.xpath.traverseXMLTree(dom, '/foo')[0]
-    test.deepEqual 'foo', doc.xpath.traverseXMLTree(dom, '/foo')[1].nodeName
-    test.deepEqual [], doc.xpath.traverseXMLTree(dom, '/foo[1]')[0]
-    test.deepEqual 'foo', doc.xpath.traverseXMLTree(dom, '/foo[1]')[1].nodeName
-    test.deepEqual [0], doc.xpath.traverseXMLTree(dom, '/foo/text()')[0]
-    test.deepEqual [2], doc.xpath.traverseXMLTree(dom, '/foo/text()[2]')[0]
-    test.deepEqual [1], doc.xpath.traverseXMLTree(dom, '/foo/p[1]')[0]
-    test.deepEqual 'p', doc.xpath.traverseXMLTree(dom, '/foo/p[1]')[1].nodeName
-    test.deepEqual [3], doc.xpath.traverseXMLTree(dom, '/foo/p[2]')[0]
-    test.deepEqual [1,0], doc.xpath.traverseXMLTree(dom, '/foo/p[1]/bar')[0]
-    test.deepEqual [1], doc.xpath.traverseXMLTree(dom, '/foo/p')[0]
-    test.deepEqual 'p', doc.xpath.traverseXMLTree(dom, '/foo/p')[1].nodeName
+    test.deepEqual 'foo', doc._selectSingle('/foo', dom).nodeName
+    test.deepEqual 'foo', doc._selectSingle('/foo[1]', dom).nodeName
+    test.deepEqual 'p', doc._selectSingle('/foo/p[1]', dom).nodeName
     
     try
-      doc.xpath.traverseXMLTree(dom, 'bar')
+      doc._selectSingle('/foo/p', dom)
       test.fail()
     catch error
-      test.strictEqual(error.message, 'TinyXPath expression does not start with slash')
+      test.strictEqual(error.message, 'More than one node selected.')
     
     try
-      doc.xpath.traverseXMLTree(dom, '/bar')
+      doc._selectSingle('/bar', dom)
       test.fail()
     catch error
-      test.strictEqual(error.message, 'Root in TinyXPath expression invalid')
+      test.strictEqual(error.message, 'Nothing selected.')
+    
+    try
+      doc._selectSingle('/foo/p[-1]', dom)
+      test.fail()
+    catch error
+      test.strictEqual(error.message, 'Nothing selected.')
+    
+    try
+      doc._selectSingle('/foo/p[7]', dom)
+      test.fail()
+    catch error
+      test.strictEqual(error.message, 'Nothing selected.')
       
-    try
-      doc.xpath.traverseXMLTree(dom, '/foo[2]')
-      test.fail()
-    catch error
-      test.strictEqual(error.message, 'Root in TinyXPath expression invalid')
+    test.done()
     
-    try
-      doc.xpath.traverseXMLTree(dom, '/foo/p[-1]')
-      test.fail()
-    catch error
-      test.strictEqual(error.message, 'Position -1 invalid')
+  '__getPath() gives sane results': (test) ->
+    doc = new Doc '<foo>abc<p><bar>xyz</bar></p>def<p>456</p></foo>'
+    dom = doc.getReadonlyDOM()
     
-    try
-      doc.xpath.traverseXMLTree(dom, '/foo/p[7]')
-      test.fail()
-    catch error
-      test.strictEqual(error.message, 'Child "p" (position 7) not found')
+    test.deepEqual [], doc.__getPath(doc._selectSingle('/foo', dom))
+    test.deepEqual [0], doc.__getPath(doc._selectSingle('/foo/text()[1]', dom))
+    test.deepEqual [2], doc.__getPath(doc._selectSingle('/foo/text()[2]', dom))
+    test.deepEqual [1], doc.__getPath(doc._selectSingle('/foo/p[1]', dom))
+    test.deepEqual [3], doc.__getPath(doc._selectSingle('/foo/p[2]', dom))
+    test.deepEqual [1,0], doc.__getPath(doc._selectSingle('/foo/p[1]/bar', dom))
       
     test.done()
     
@@ -81,51 +79,27 @@ module.exports =
     test.done()
     
   'get() gives sane results': (test) ->
-    doc = new Doc '<foo>abc<p id="bar">123</p>def<p>456</p><abc:p>789</abc:p></foo>'
+    doc = new Doc '<foo>abc<p id="bar">123</p>def<p>456</p><p>789</p></foo>'
     test.deepEqual '<p>456</p>', doc.get('/foo/p[2]')
-    test.deepEqual 'abc', doc.get('/foo/text()')
+    test.deepEqual 'abc', doc.get('/foo/text()[1]')
     test.deepEqual 'bar', doc.get('/foo/p[1]/@id')
-    test.deepEqual '789', doc.get('/foo/abc:p/text()')
+    test.deepEqual '789', doc.get('/foo/p[3]/text()')
     
-    try
-      doc.get('/foo/p[1]/@id/@id')
-      test.fail()
-    catch error
-      test.strictEqual(error.message, 'TinyXPath expression has more than one attribute accessor')
-      
-    try
-      doc.get('/foo/p[1]/@123')
-      test.fail()
-    catch error
-      test.strictEqual(error.message, 'Attribute accessor in TinyXPath expression is invalid')
-  
     test.done()
 
   'get() with attribute filter gives sane results': (test) ->
     doc = new Doc '<foo id="barfoo">abc<p id="bar"><a foo="bar">123</a></p>def<p id="xyz" class="x">456</p></foo>'
-    test.deepEqual '<p id="bar"><a foo="bar">123</a></p>', doc.get('/foo/p[@id=bar]')
-    test.deepEqual '<p id="xyz" class="x">456</p>', doc.get('/foo/p[@id=xyz]')
-    test.deepEqual '<p id="xyz" class="x">456</p>', doc.get('/foo/p[@class=x]')
-    test.deepEqual '456', doc.get('/foo/p[@class=x]/text()')
-    test.deepEqual '123', doc.get('/foo/p[@id=bar]/a[@foo=bar]/text()')
+    test.deepEqual '<p id="bar"><a foo="bar">123</a></p>', doc.get('/foo/p[@id="bar"]')
+    test.deepEqual '<p id="xyz" class="x">456</p>', doc.get('/foo/p[@id="xyz"]')
+    test.deepEqual '<p id="xyz" class="x">456</p>', doc.get('/foo/p[@class="x"]')
+    test.deepEqual '456', doc.get('/foo/p[@class="x"]/text()')
+    test.deepEqual '123', doc.get('/foo/p[@id="bar"]/a[@foo="bar"]/text()')
     
     try
-      doc.get('/foo/p[@class=y]')
+      doc.get('/foo')
       test.fail()
     catch error
-      test.strictEqual(error.message, 'Child "p" (Attribute class=y) not found')
-      
-    try
-      doc.get('/foo/p[@class=y=abc]')
-      test.fail()
-    catch error
-      test.strictEqual(error.message, 'TinyXPath expression invalid')
-      
-    try
-      doc.get('/foo/p[@class@y=abc]')
-      test.fail()
-    catch error
-      test.strictEqual(error.message, 'TinyXPath expression invalid')
+      test.strictEqual(error.message, 'Using get() to retrieve the root is unsupported. Use getText() instead.')
     
     test.done()
 
@@ -140,8 +114,6 @@ module.exports =
       test.fail()
     catch error
       test.strictEqual(error.message, 'Replacing root element is unsupported. Create a new document instead.')
-        
-    #console.log('If the tests above give messages like "invalid document source @#[line:0,col:...]", ignore those. I don\'t know the cause but everything works as intended ;)')
     
     doc = new Doc
     doc.createRoot '<foo>abc<p id="bar">123</p>def<p>456</p></foo>', ->
@@ -166,13 +138,13 @@ module.exports =
     doc = new Doc '<foo>abc<p id="bar">123</p>def<p>456</p></foo>'
     
     try
-      doc.setElement('/foo/@bar', 1, '')
+      doc.setElement('/foo/p[1]/@id', 1, '')
       test.fail()
     catch error
       test.strictEqual(error.message, 'Using setElement() to set attributes is unsupported. Use setAttribute() instead.')
       
     try
-      doc.setElement('/foo/text()', 1, '')
+      doc.setElement('/foo/text()[1]', 1, '')
       test.fail()
     catch error
       test.strictEqual(error.message, 'Using setElement() to set text is unsupported. Use insertTextAt() instead.')
@@ -181,27 +153,26 @@ module.exports =
       doc.setElement('/foo', 0, '')
       test.fail()
     catch error
-      test.strictEqual(error.message, 'Position 0 invalid')
+      test.strictEqual(error.message, 'Position 0 invalid.')
     
     try
       doc.setElement('/foo', -1, '')
       test.fail()
     catch error
-      test.strictEqual(error.message, 'Position -1 invalid')
+      test.strictEqual(error.message, 'Position -1 invalid.')
       
     try
       doc.setElement('/foo', 17, '')
       test.fail()
     catch error
-      test.strictEqual(error.message, 'Cannot set element with index 16, parent has only 4 children')
+      test.strictEqual(error.message, 'Cannot set element with index 16, parent has only 4 children.')
     
     # check callback
     doc.setElement '/foo', 3, '<a></a>', ->
       test.deepEqual '<foo>abc<p id="bar">123</p><a/><p>456</p></foo>', doc.getText()
       test.deepEqual doc.getText(), xml.serializer.serializeToString(doc.dom)
-    
       test.done()
-  
+
   'insertElementAt() gives sane results': (test) ->
     doc = new Doc '<foo>abc<p>123</p>def</foo>'
     
@@ -209,7 +180,7 @@ module.exports =
     test.deepEqual '<foo>abc<p>123</p>def<p>456</p></foo>', doc.getText()
     test.deepEqual doc.getText(), xml.serializer.serializeToString(doc.dom)
     
-    doc.insertElementAt '/foo/p', 2, '<a></a>', ->
+    doc.insertElementAt '/foo/p[1]', 2, '<a></a>', ->
       test.deepEqual '<foo>abc<p>123<a/></p>def<p>456</p></foo>', doc.getText()
       test.deepEqual doc.getText(), xml.serializer.serializeToString(doc.dom)
     
@@ -252,12 +223,12 @@ module.exports =
   'removeElement() gives sane results': (test) ->
     doc = new Doc '<foo>abc<p id="bar">123</p>def<p>456</p></foo>'
     
-    doc.removeElement('/foo/p')
+    # This test is particularly interesting because it checks if "abc" and "def"
+    # correctly merge to "abcdef" and not into two adjacent text nodes.
+    doc.removeElement('/foo/p[1]')
     test.deepEqual '<foo>abcdef<p>456</p></foo>', doc.getText()
     test.deepEqual doc.getText(), xml.serializer.serializeToString(doc.dom)
     
-    # This test is particularly interesting because it checks if "abc" and "def"
-    # correctly merge to "abcdef" and not into two adjacent text nodes.
     doc.removeElement '/foo/p', ->
       test.deepEqual '<foo>abcdef</foo>', doc.getText()
       test.deepEqual doc.getText(), xml.serializer.serializeToString(doc.dom)
@@ -280,7 +251,7 @@ module.exports =
   'insertTextAt() gives sane results': (test) ->
     doc = new Doc '<foo>abc<p>123</p>def<p/></foo>'
   
-    doc.insertTextAt('/foo/text()', 3, 'def')
+    doc.insertTextAt('/foo/text()[1]', 3, 'def')
     test.deepEqual '<foo>abcdef<p>123</p>def<p/></foo>', doc.getText()
     test.deepEqual doc.getText(), xml.serializer.serializeToString(doc.dom)
     
@@ -296,27 +267,34 @@ module.exports =
     test.deepEqual '<foo>abcdef<p>zzz123</p>defghi<p>zzz</p></foo>', doc.getText()
     test.deepEqual doc.getText(), xml.serializer.serializeToString(doc.dom)
     
-    # Einfügen von Text an beliebigen Orten
     doc = new Doc '<foo><p/></foo>'
     
     doc.insertTextAt('/foo/text()', 0, 'abc') # creates text node
     test.deepEqual '<foo>abc<p/></foo>', doc.getText()
     test.deepEqual doc.getText(), xml.serializer.serializeToString(doc.dom)
     
+    doc.insertTextAt('/foo/p/text()', 0, 'xyz') # creates text node
+    test.deepEqual '<foo>abc<p>xyz</p></foo>', doc.getText()
+    test.deepEqual doc.getText(), xml.serializer.serializeToString(doc.dom)
+    
     doc.insertTextAt('/foo/text()[2]', 0, 'def') # creates text node
-    test.deepEqual '<foo>abc<p/>def</foo>', doc.getText()
+    test.deepEqual '<foo>abc<p>xyz</p>def</foo>', doc.getText()
     test.deepEqual doc.getText(), xml.serializer.serializeToString(doc.dom)
     
     doc.insertTextAt('/foo/text()[2]', 0, 'ghi') # inserts text in existing node
-    test.deepEqual '<foo>abc<p/>ghidef</foo>', doc.getText()
+    test.deepEqual '<foo>abc<p>xyz</p>ghidef</foo>', doc.getText()
+    test.deepEqual doc.getText(), xml.serializer.serializeToString(doc.dom)
+    
+    doc.insertTextAt('/foo/text()[2]', 1, 'yyy') # inserts text in the middle of an existing text node
+    test.deepEqual '<foo>abc<p>xyz</p>gyyyhidef</foo>', doc.getText()
     test.deepEqual doc.getText(), xml.serializer.serializeToString(doc.dom)
     
     doc.insertTextAt('/foo/text()[3]', 0, 'zzz') # creates text node that is merged with the existing one
-    test.deepEqual '<foo>abc<p/>ghidefzzz</foo>', doc.getText()
+    test.deepEqual '<foo>abc<p>xyz</p>gyyyhidefzzz</foo>', doc.getText()
     test.deepEqual doc.getText(), xml.serializer.serializeToString(doc.dom)
     
-    doc.insertTextAt '/foo/text()[2]', 8, 'xxx', -> # inserts text in merged node
-      test.deepEqual '<foo>abc<p/>ghidefzzxxxz</foo>', doc.getText()
+    doc.insertTextAt '/foo/text()[2]', 11, 'xxx', -> # inserts text in merged node
+      test.deepEqual '<foo>abc<p>xyz</p>gyyyhidefzzxxxz</foo>', doc.getText()
       test.deepEqual doc.getText(), xml.serializer.serializeToString(doc.dom)
     
       test.done()
@@ -324,7 +302,7 @@ module.exports =
   'removeTextAt() gives sane results': (test) ->
     doc = new Doc '<foo>abc<p>123</p>def<p/></foo>'
   
-    doc.removeTextAt('/foo/text()', 1, 1)
+    doc.removeTextAt('/foo/text()[1]', 1, 1)
     test.deepEqual '<foo>ac<p>123</p>def<p/></foo>', doc.getText()
     test.deepEqual doc.getText(), xml.serializer.serializeToString(doc.dom)
     
@@ -345,11 +323,11 @@ module.exports =
   'replaceTextAt() gives sane results': (test) ->
     doc = new Doc '<foo>abc<p>123</p>def<p/></foo>'
     
-    doc.replaceTextAt('/foo/text()', 1, 'de')
+    doc.replaceTextAt('/foo/text()[1]', 1, 'de')
     test.deepEqual '<foo>ade<p>123</p>def<p/></foo>', doc.getText()
     test.deepEqual doc.getText(), xml.serializer.serializeToString(doc.dom)
     
-    doc.replaceTextAt('/foo/text()', 1, 'de123')
+    doc.replaceTextAt('/foo/text()[1]', 1, 'de123')
     test.deepEqual '<foo>ade123<p>123</p>def<p/></foo>', doc.getText()
     test.deepEqual doc.getText(), xml.serializer.serializeToString(doc.dom)
     

@@ -1,8 +1,14 @@
 # XML and HTML document API
 
+if require?
+  XPathLib = require 'xpath'
+else
+  XPathLib = window.xpath
+
 class XMLAPIClass
   constructor: (@type) ->
-    @xpath = new TinyXPathProcessor()
+    @xpathlib = XPathLib
+    @xpath = @xpathlib.select
 
   provides: {xml:true}
 
@@ -24,41 +30,20 @@ class XMLAPIClass
   # A subclass of XMLClass may override this
   _extractPayload: (documentElement) ->
     return documentElement
-  
-  class TinyXPathProcessor
-    traverseXMLTree: (dom, tinyXPath) ->
-      path = []
-      if tinyXPath[0] isnt '/'
-        throw new Error 'TinyXPath expression does not start with slash'
-      steps = tinyXPath.split('/')[1...]
-      [rootName, pos] = steps[0].split('[')
-      if rootName isnt dom.documentElement.nodeName.toLowerCase() or (pos? and pos != '1]')
-        throw new Error 'Root in TinyXPath expression invalid'
-      child = elem = dom.documentElement
-      for step in steps[1...]
-        [childName, filter] = step.split('[')
-        if filter? and filter[0] == '@'
-          [filterAttribute, filterValue] = filter[1...-1].split('=')
-          found = false
-          for child in @getChildrenByNodeName(elem, childName)
-            if child.getAttribute(filterAttribute) == filterValue
-              found = true
-              break
-          if !found
-            throw new Error "Child \"#{childName}\" (Attribute #{filter[1...-1]}) not found"
-        else
-          pos = if filter isnt undefined then parseInt(filter[...-1]) else 1
-          if pos is undefined or pos < 1
-            throw new Error "Position #{pos} invalid"
-          child = @getChildrenByNodeName(elem, childName)[pos - 1] # TinyXPath always returns the first match; XPath is 1-indexed
-          if child is undefined
-            @getChildrenByNodeName(elem, childName)[pos - 1]
-            throw new Error "Child \"#{childName}\" (position #{pos}) not found"
-        path.push(Array.prototype.indexOf.call(elem.childNodes, child))
-        elem = child
-      return [path, child]
 
-    getChildrenByNodeName: (elem, nodeName) ->
+  _transformElementPosition: (pos) ->
+    pos = if pos isnt undefined then parseInt(pos) else 1
+    if pos is undefined or pos < 1
+      throw new Error "Position #{pos} invalid."
+    return pos - 1
+    
+  _transformTextPosition: (pos) ->
+    pos = if pos isnt undefined then parseInt(pos) else 0
+    if pos is undefined or pos < 0
+      throw new Error "Position #{pos} invalid."
+    return pos
+    
+  _getChildrenByNodeName: (elem, nodeName) ->
       nodeName = '#text' if nodeName is 'text()'
       result = []
       for child in elem.childNodes
@@ -66,31 +51,22 @@ class XMLAPIClass
           result.push(child)
       return result
 
-    checkTinyXPath: (dom, tinyXPath) ->
-      parts = tinyXPath.split('/@')
-      if parts.length > 2
-        throw new Error 'TinyXPath expression has more than one attribute accessor'
-      if parts.length > 1 and parts[1].match(/^[a-z][a-z0-9]*$/i) is null
-        throw new Error 'Attribute accessor in TinyXPath expression is invalid'
-      if parts[0].match(/^(\/[a-z@][a-z0-9:]*(\(\))?(\[(\d+|(@[a-z][a-z0-9]*=[a-z0-9]+))\])?)*$/i) is null
-        throw new Error 'TinyXPath expression invalid'
-      return tinyXPath.split('/@')
-
-  # adds TinyXPathProcessor to the prototype of XMLAPIClass
-  TinyXPathProcessor: TinyXPathProcessor
-
-  _transformElementPosition: (pos) ->
-    pos = if pos isnt undefined then parseInt(pos) else 1
-    if pos is undefined or pos < 1
-      throw new Error "Position #{pos} invalid"
-    return pos - 1
+  _selectSingle: (XPath, dom) ->
+    nodes = @xpath(XPath, dom)
+    if not nodes? or nodes.length is 0 or not nodes[0]?
+      throw new Error 'Nothing selected.'
+    if nodes.length > 1
+      throw new Error 'More than one node selected.'
+    return nodes[0]
     
-  _transformTextPosition: (pos) ->
-    pos = if pos isnt undefined then parseInt(pos) else 0
-    if pos is undefined or pos < 0
-      throw new Error "Position #{pos} invalid"
-    return pos
-
+  __getPath: (node) ->
+    path = []
+    while node.parentNode?
+      path.unshift(Array.prototype.indexOf.call(node.parentNode.childNodes, node))
+      node = node.parentNode
+    path.shift()
+    return path
+    
   # Prepares event handlers
   _register: ->
     @_listeners = []
@@ -151,18 +127,18 @@ class XMLAPIClass
             child_path = c.p[path.length..]
             cb(child_path, c)
 
-  addListener: (tinyXPath, event, cb) ->
-    [steps, attributeName] = @xpath.checkTinyXPath(@dom, tinyXPath)
-    if attributeName isnt undefined
-      throw new Error 'Adding a listener on an attribute is unsupported. Register the listener on the element.'
+  addListener: (XPath, event, cb) ->
     @_ensureDOMexists()
-    [path, elem] = @xpath.traverseXMLTree(@dom, steps)
-    l = {path, event, cb}
-    @_listeners.push l
-    return l
+    node = @_selectSingle(XPath, @dom)
+    if node.nodeType isnt 1
+      throw new Error 'Adding a listener on a non-element node is unsupported.'
+    path = @__getPath(node)
+    listener = {path, event, cb}
+    @_listeners.push listener
+    return listener
   
-  removeListener: (l) ->
-    i = @_listeners.indexOf l
+  removeListener: (listener) ->
+    i = @_listeners.indexOf listener
     return false if i < 0
     @_listeners.splice i, 1
     return true
@@ -175,16 +151,15 @@ class XMLAPIClass
     return @dom
   
   # Gets elements, text and attribute values
-  get: (tinyXPath) ->
-    [steps, attributeName] = @xpath.checkTinyXPath(@dom, tinyXPath)
+  get: (XPath) ->
     @_ensureDOMexists()
-    [path, elem] = @xpath.traverseXMLTree(@dom, steps)
-    if path.length is 0
+    node = @_selectSingle(XPath, @dom)
+    if node.nodeType is 1 and not node.parentNode.parentNode?
       throw new Error 'Using get() to retrieve the root is unsupported. Use getText() instead.'
-    if attributeName is undefined
-      return @type.serializer.serializeToString(elem)
+    if node.nodeType isnt 2
+      return @type.serializer.serializeToString(node)
     else
-      return elem.getAttribute(attributeName)
+      return node.ownerElement.getAttribute(node.nodeName)
   
   createRoot: (value, callback) ->
     if @dom and @dom.documentElement isnt undefined
@@ -193,45 +168,49 @@ class XMLAPIClass
     @submitOp [{ei:value, p:[]}], callback
   
   # Replaces/sets elements
-  setElement: (tinyXPathToParent, pos, value, callback) ->
-    [steps, attributeName] = @xpath.checkTinyXPath(@dom, tinyXPathToParent)
-    if attributeName isnt undefined
-      throw new Error 'Using setElement() to set attributes is unsupported. Use setAttribute() instead.'
-    if steps == '/'
-      throw new Error 'Replacing root element is unsupported. Create a new document instead.'
+  setElement: (XPathToParent, pos, value, callback) ->
     @_ensureDOMexists()
-    [path, parent] = @xpath.traverseXMLTree(@dom, steps)
-    if parent.nodeName.toLowerCase() == '#text'
+    parent = @_selectSingle(XPathToParent, @dom)
+    if parent.nodeType is 2
+      throw new Error 'Using setElement() to set attributes is unsupported. Use setAttribute() instead.'
+    if parent.nodeType is 3
       throw new Error 'Using setElement() to set text is unsupported. Use insertTextAt() instead.'
+    if parent.nodeType isnt 1
+      throw new Error 'XPath has to select an element'
+    if not parent.parentNode?
+      throw new Error 'Replacing root element is unsupported. Create a new document instead.'
     pos = @_transformElementPosition(pos)
     if parent.childNodes.length < pos
-      throw new Error "Cannot set element with index #{pos}, parent has only #{parent.childNodes.length} children"
+      throw new Error "Cannot set element with index #{pos}, parent has only #{parent.childNodes.length} children."
+    if parent.childNodes[pos] is undefined
+      throw new Error "Using setElement() to append an element is unsupported. Use insertElementAt() instead."
+    path = @__getPath(parent)
     op = {p:path.concat(pos)}
     op.ei = value
     newDoc = @type.parser.parseFromString(value, @type.docType)
     newElem = @_extractPayload(newDoc.documentElement)
-    if parent.childNodes[pos] is undefined
-      throw new Error "Using setElement() to append an element is unsupported. Use insertElementAt() instead." 
     op.ed = parent.childNodes[pos].nodeName.toLowerCase()
     parent.replaceChild(newElem, parent.childNodes[pos])    
     @submitOp [op], callback
     
-  insertElementAt: (tinyXPathToParent, pos, value, callback) ->
-    [steps, attributeName] = @xpath.checkTinyXPath(@dom, tinyXPathToParent)
-    if attributeName isnt undefined
+  insertElementAt: (XPathToParent, pos, value, callback) ->
+    @_ensureDOMexists() # also normalizes DOM
+    parent = @_selectSingle(XPathToParent, @dom)
+    if parent.nodeType is 2
       throw new Error 'Using insertElementAt() to set attributes is unsupported. Use setAttribute() instead.'
-    if steps == '/'
+    if parent.nodeType is 3
+      throw new Error 'Using insertElementAt() to set text is unsupported. Use insertTextAt() instead.'
+    if parent.nodeType isnt 1
+      throw new Error 'XPath has to select an element.'
+    if not parent.parentNode?
       if not @dom or @dom.documentElement is undefined
         throw new Error 'Inserting root element is unsupported. Create a new document instead.'
       else
-        throw new Error 'Having more than one root element is no valid XML'
-    @_ensureDOMexists() # normalizes DOM
-    [path, parent] = @xpath.traverseXMLTree(@dom, steps)
-    if parent.nodeName.toLowerCase() == '#text'
-      throw new Error 'Using insertElementAt() to set text is unsupported. Use insertTextAt() instead.'
+        throw new Error 'Having more than one root element is no valid XML.'
     pos = @_transformElementPosition(pos)
     if parent.childNodes.length < pos
-      throw new Error "Cannot set element at position #{pos}, parent has only #{parent.childNodes.length} children"
+      throw new Error "Cannot set element at position #{pos}, parent has only #{parent.childNodes.length} children."
+    path = @__getPath(parent)
     op = {p:path.concat(pos)}
     op.ei = value
     newDoc = @type.parser.parseFromString(value, @type.docType)
@@ -242,131 +221,162 @@ class XMLAPIClass
       parent.insertBefore(newElem, parent.childNodes[pos])
     @submitOp [op], callback
   
-  moveElement: (tinyXPath, moveToPos, callback) ->
-    [steps, attributeName] = @xpath.checkTinyXPath(@dom, tinyXPath)
-    if attributeName isnt undefined
-      throw new Error 'Attributes cannot be moved'
-    if steps == '/'
-      throw new Error 'Root element cannot be moved'
+  moveElement: (XPath, moveToPos, callback) ->
     @_ensureDOMexists()
-    [path, elem] = @xpath.traverseXMLTree(@dom, steps)
+    node = @_selectSingle(XPath, @dom)
+    if node.nodeType is 2
+      throw new Error 'Attributes cannot be moved.'
+    if node.nodeType is 1 and not node.parentNode.parentNode?
+      throw new Error 'Root element cannot be moved.'
     moveToPos = @_transformElementPosition(moveToPos)
-    if elem.parentNode.childNodes.length <= moveToPos
-      throw new Error "Cannot move element to position #{moveToPos}, parent has only #{elem.parentNode.childNodes.length} children"
+    if node.parentNode.childNodes.length <= moveToPos
+      throw new Error "Cannot move element to position #{moveToPos}, parent has only #{elem.parentNode.childNodes.length} children."
+    path = @__getPath(node)
     op = {p:path, em:moveToPos}
-    if elem.parentNode.childNodes.length - moveToPos == 1 # special case, moving to last child
-      elem.parentNode.appendChild(elem)
+    if node.parentNode.childNodes.length - moveToPos == 1 # special case, moving to last child
+      node.parentNode.appendChild(node)
     else
       if path[path.length - 1] < moveToPos
-        elem.parentNode.insertBefore(elem, elem.parentNode.childNodes[moveToPos + 1])
+        node.parentNode.insertBefore(node, node.parentNode.childNodes[moveToPos + 1])
       else
-        elem.parentNode.insertBefore(elem, elem.parentNode.childNodes[moveToPos])
+        node.parentNode.insertBefore(node, node.parentNode.childNodes[moveToPos])
     @submitOp [op], callback
 
   # Replaces/sets attributes
-  setAttribute: (tinyXPath, value, callback) ->
-    [steps, attributeName] = @xpath.checkTinyXPath(@dom, tinyXPath)
-    if attributeName is undefined
-      throw new Error 'Using setAttribute() to set elements is unsupported. Use setElement() or insertElementAt() instead.'
-    @_ensureDOMexists()
-    [path, elem] = @xpath.traverseXMLTree(@dom, steps)  
-    if elem.nodeName.toLowerCase() == '#text'
-      throw new Error 'Cannot set an attribute of a text node.'
-    op = {p:path.concat(attributeName), as:value}
-    elem.setAttribute(attributeName, value)  
-    @submitOp [op], callback
-    
-  removeElement: (tinyXPath, callback) ->
-    [steps, attributeName] = @xpath.checkTinyXPath(@dom, tinyXPath)
-    if attributeName isnt undefined
-      throw new Error 'Using removeElement() to remove attributes is unsupported. Use removeAttribute() instead.'
-    if steps == '/'
-      throw new Error 'Removing root element is unsupported'
-    @_ensureDOMexists()
-    [path, elem] = @xpath.traverseXMLTree(@dom, steps)
-    if elem.nodeName.toLowerCase() == '#text'
-      throw new Error 'Using removeElement() to remove text content is unsupported. Use removeTextAt() instead.'
-    op = {p:path, ed:elem.nodeName.toLowerCase()}
-    elem.parentNode.removeChild(elem)
-    @submitOp [op], callback
-    
-  removeAttribute: (tinyXPath, callback) ->
-    [steps, attributeName] = @xpath.checkTinyXPath(@dom, tinyXPath)
-    if attributeName is undefined
-      throw new Error 'Using removeAttribute() to set elements is unsupported. Use removeElement() instead.'
-    @_ensureDOMexists()
-    [path, elem] = @xpath.traverseXMLTree(@dom, steps)  
-    if elem.nodeName.toLowerCase() == '#text'
-      throw new Error 'Cannot remove an attribute of a text node.'
-    op = {p:path.concat(attributeName), ad:elem.getAttribute(attributeName)}
-    elem.removeAttribute(attributeName)  
-    @submitOp [op], callback
-  
-  insertTextAt:(tinyXPath, pos, value, callback) ->
-    @_getOpForInsertTextAt tinyXPath, pos, value, (op) =>
-      @submitOp op, callback
-
-  _getOpForInsertTextAt: (tinyXPath, pos, value, callback) ->
-    [steps, attributeName] = @xpath.checkTinyXPath(@dom, tinyXPath)
-    if attributeName isnt undefined
-      throw new Error 'Using insertTextAt() to set attribute content is unsupported. Use setAttribute() instead.'
-    pos = @_transformTextPosition(pos)
+  setAttribute: (XPath, value, callback) ->
     @_ensureDOMexists()
     try
-      [path, elem] = @xpath.traverseXMLTree(@dom, steps)
-      if elem.nodeName.toLowerCase() != '#text'
-        throw new Error 'TinyXPath expression does not point at a text node'
-      if elem.data.length < pos
-        throw new Error "Cannot insert text at position #{pos}, element's content is only #{elem.data.length} characters long"
-      op = {ti:value, p:path.concat(pos)}
-      elem.data = elem.data[...pos] + value + elem.data[pos..]
+      # Case 1: Attribute already exists, so select it and set it's value
+      node = @_selectSingle(XPath, @dom)
+      if node.nodeType is 1
+        throw new Error 'Using setAttribute() to set elements is unsupported. Use setElement() or insertElementAt() instead.'
+      if node.nodeType is 3
+        throw new Error 'Cannot set an attribute of a text node.'
+      if node.nodeType isnt 2
+        throw new Error 'XPath has to select an attribute.'
+      parent = node.ownerElement
+      attributeName = node.nodeName
+      parent.setAttribute(attributeName, value)
     catch error
-      # if the text node does not exist yet, find the parent and create one
-      if pos != 0 or error.message.lastIndexOf('Child "text()" (position ') != 0
-        throw error
-      op = {ei:'>' + value}
-      steps = steps[...steps.lastIndexOf('/')]
-      [path, elem] = @xpath.traverseXMLTree(@dom, steps)
-      newTextNode = @dom.createTextNode(value)
-      existingTextNodes = @xpath.getChildrenByNodeName(elem, 'text()')
-      if elem.childNodes[0] is undefined or existingTextNodes.length != 0
-        if existingTextNodes.length != 0
-          op.p = path.concat(elem.childNodes.length)
-        else
-          op.p = path.concat(0)
-        elem.appendChild(newTextNode)
+      # Case 2: Attribute does not exist yet, so get parent node and create it
+      if error.message is 'Nothing selected.'
+        parts = XPath.split('/@')
+        if parts.length isnt 2
+          throw new Error 'XPath has none or more than one attribute accessor.'
+        if parts[1].match(/^[a-z][a-z0-9]*$/i) is undefined
+          throw new Error 'Attribute accessor in XPath invalid.'
+        parent = @_selectSingle(parts[0], @dom)
+        attributeName = parts[1]
+        parent.setAttribute(attributeName, value)
+        node = @_selectSingle(XPath, @dom)
       else
-        elem.insertBefore(newTextNode, elem.childNodes[0])
-        op.p = path.concat(0)
-    callback([op])
+        throw error
+    path = @__getPath(parent)
+    op = {p:path.concat(attributeName), as:value}
+    @submitOp [op], callback
+    
+  removeElement: (XPath, callback) ->
+    @_ensureDOMexists()
+    node = @_selectSingle(XPath, @dom)
+    if node.nodeType is 2
+      throw new Error 'Using removeElement() to remove attributes is unsupported. Use removeAttribute() instead.'
+    if node.nodeType is 3
+      throw new Error 'Using removeElement() to remove text content is unsupported. Use removeTextAt() instead.'
+    if node.nodeType is 1 and not node.parentNode.parentNode?
+      throw new Error 'Removing root element is unsupported.'
+    path = @__getPath(node)
+    op = {p:path, ed:node.nodeName.toLowerCase()}
+    node.parentNode.removeChild(node)
+    @submitOp [op], callback
+    
+  removeAttribute: (XPath, callback) ->
+    @_ensureDOMexists()
+    node = @_selectSingle(XPath, @dom)
+    if node.nodeType is 1
+      throw new Error 'Using removeAttribute() to remove elements is unsupported. Use removeElement() instead.'
+    if node.nodeType is 3
+      throw new Error 'Cannot remove an attribute of a text node.'
+    if node.nodeType isnt 2
+      throw new Error 'XPath has to select an attribute.'
+    parent = node.ownerElement
+    path = @__getPath(parent)
+    attributeName = node.nodeName
+    op = {p:path.concat(attributeName), ad:parent.getAttribute(attributeName)}
+    parent.removeAttribute(attributeName)
+    @submitOp [op], callback
   
-  removeTextAt:(tinyXPath, pos, length, callback) ->
-    @_getOpForRemoveTextAt tinyXPath, pos, length, (op) =>
+  insertTextAt:(XPath, pos, value, callback) ->
+    @_getOpForInsertTextAt XPath, pos, value, (op) =>
       @submitOp op, callback
 
-  _getOpForRemoveTextAt: (tinyXPath, pos, length, callback) -> # length = -1 means: Delete everything after pos
-    [steps, attributeName] = @xpath.checkTinyXPath(@dom, tinyXPath)
-    if attributeName isnt undefined
-      throw new Error 'Using removeTextAt() to remove attribute content is unsupported. Use setAttribute() instead.'
-    pos = @_transformTextPosition(pos)
+  _getOpForInsertTextAt: (XPath, pos, value, callback) ->
     @_ensureDOMexists()
-    [path, elem] = @xpath.traverseXMLTree(@dom, steps)
-    if elem.nodeName.toLowerCase() != '#text'
-      throw new Error 'TinyXPath expression does not point at a text node'
-    if elem.data.length < pos
-      throw new Error "Cannot insert text at position #{pos}, element's content is only #{elem.data.length} characters long"
+    pos = @_transformTextPosition(pos)
+    try
+      # Case 1: Text node already exists, so select it and set it's value
+      node = @_selectSingle(XPath, @dom)
+      if node.nodeType is 2
+        throw new Error 'Using insertTextAt() to set attribute content is unsupported. Use setAttribute() instead.'
+      if node.nodeType isnt 3
+        throw new Error 'XPath expression does not point at a text node.'
+      if node.data.length < pos
+        throw new Error "Cannot insert text at position #{pos}, element's content is only #{node.data.length} characters long."
+      node.data = node.data[...pos] + value + node.data[pos..]
+      path = @__getPath(node)
+      op = {ti:value, p:path.concat(pos)}
+    catch error
+      # Case 2: Text node does not exist yet, so get parent node and create it
+      if error.message is 'Nothing selected.'
+        parts = XPath.split('/text()')
+        if parts.length isnt 2
+          throw new Error 'XPath has none or more than one "text()" expression.'
+        if parts[1] isnt '' and parts[1].match(/^\[(\d+)\]$/) is undefined
+          throw new Error 'Text node accessor in XPath invalid.'
+        if pos isnt 0
+          throw new Error "Cannot insert text at position #{pos}, only inserting at position 0 is possible."
+        parent = @_selectSingle(parts[0], @dom)
+        path = @__getPath(parent)
+        newTextNode = @dom.createTextNode(value)
+        op = {ei:'>' + value}
+        existingTextNodes = @_getChildrenByNodeName(parent, 'text()')
+        if parent.childNodes[0] is undefined or existingTextNodes.length != 0
+          if existingTextNodes.length != 0
+            op.p = path.concat(parent.childNodes.length)
+          else
+            op.p = path.concat(0)
+          parent.appendChild(newTextNode)
+        else
+          parent.insertBefore(newTextNode, parent.childNodes[0])
+          op.p = path.concat(0)
+      else 
+        throw error
+    callback([op])
+  
+  removeTextAt:(XPath, pos, length, callback) ->
+    @_getOpForRemoveTextAt XPath, pos, length, (op) =>
+      @submitOp op, callback
+
+  _getOpForRemoveTextAt: (XPath, pos, length, callback) -> # length = -1 means: Delete everything after pos
+    @_ensureDOMexists()
+    node = @_selectSingle(XPath, @dom)
+    if node.nodeType is 2
+      throw new Error 'Using removeTextAt() to remove attribute content is unsupported. Use setAttribute() instead.'
+    if node.nodeType isnt 3
+      throw new Error 'XPath expression does not point at a text node.'
+    pos = @_transformTextPosition(pos)
     if length == -1
-      length = elem.data.length - pos
-    op = {p:path.concat(pos), td:elem.data[pos...(pos + length)]}
-    elem.data = elem.data[...pos] + elem.data[pos + length...]
-    if elem.data.length == 0 # we deleted all text, so delete the text node
+      length = node.data.length - pos
+    path = @__getPath(node)
+    op = {p:path.concat(pos), td:node.data[pos...(pos + length)]}
+    node.data = node.data[...pos] + node.data[pos + length...]
+    if node.data.length == 0 # we deleted all text, so delete the text node
       op = {p:path, ed:'#text'}
-      elem.parentNode.removeChild(elem)
+      node.parentNode.removeChild(node)
     callback([op])
 
-  replaceTextAt: (tinyXPath, pos, value, callback) ->
-    @_getOpForInsertTextAt tinyXPath, pos, value, (op1) =>
-      @_getOpForRemoveTextAt tinyXPath, pos + value.length, -1, (op2) =>
+  replaceTextAt: (XPath, pos, value, callback) ->
+    @_getOpForInsertTextAt XPath, pos, value, (op1) =>
+      @_getOpForRemoveTextAt XPath, pos + value.length, -1, (op2) =>
         @submitOp op1.concat(op2), callback
     
 if WEB?

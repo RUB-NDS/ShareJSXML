@@ -6,7 +6,7 @@ module.exports =
   name: "sharejsxml"
 
   # Change version with "cake [-V newversion] bump"
-  version: "0.9.24"
+  version: "0.10.0"
   description: "A database for concurrent XML document editing"
   keywords: [
   	"operational transformation"
@@ -43,7 +43,10 @@ module.exports =
     hat: "*"
     
     #XML parsing and serializing
-    xmldom: "0.1.19"
+    xmldom: "0.1.27"
+    
+    #XPath processing
+    xpath: ">=0.0.23"
 
   # Developer dependencies
   devDependencies:
@@ -53,9 +56,6 @@ module.exports =
 
     # Tests
     nodeunit: "*"
-
-    # Unixy shell stuff for Cakefile
-    shelljs: "*"
 
     # Javascript compression
     "uglify-js": "~2.7"
@@ -78,9 +78,7 @@ module.exports =
     test: "cake test"
     prepublish: "cake webclient"
 
-  licenses: [
-    type: "MIT"
-  ]
+  license: "MIT"
   
   repository:
     type: "git"

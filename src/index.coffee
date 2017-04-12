@@ -2,4 +2,4 @@ exports.server = require './server'
 exports.client = require './client'
 exports.types = require './types'
 
-exports.version = '0.9.24'
+exports.version = '0.10.0'

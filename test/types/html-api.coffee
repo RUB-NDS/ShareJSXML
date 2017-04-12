@@ -23,11 +23,11 @@ module.exports =
     test.done()
   
   'get() gives sane results': (test) ->
-    doc = new Doc '<html>abc<p id="bar">123</p>def<p>456</p></html>'
-    test.deepEqual '<p>456</p>', doc.get('/html/p[2]')
+    doc = new Doc '<html xmlns="http://www.w3.org/1999/xhtml">abc<p id="bar">123</p>def<p>456</p></html>'
+    test.deepEqual '<p xmlns="http://www.w3.org/1999/xhtml">456</p>', doc.get('/x:html/x:p[2]')
     
-    doc = new Doc "<html xmlns=\"http://www.w3.org/1999/xhtml\"><head>\n	<title></title>\n</head>\n<body>&nbsp;</body>\n</html>"
-    test.deepEqual '<body> </body>', doc.get('/html/body')
+    doc = new Doc '<html xmlns="http://www.w3.org/1999/xhtml"><head>\n<title></title>\n</head>\n<body>&nbsp;</body>\n</html>'
+    test.deepEqual '<body xmlns="http://www.w3.org/1999/xhtml"> </body>', doc.get('/x:html/x:body')
     
     test.done()
     
@@ -37,7 +37,7 @@ module.exports =
     test.deepEqual "<html xmlns=\"http://www.w3.org/1999/xhtml\"><head>\n	<title></title>\n</head>\n<body>\n<p>h</p>\n</body>\n</html>", doc.type.apply(doc.getText(), [{p:[2], ed:'body', ei:"<body>\n<p>h</p>\n</body>"}])
     
     doc = new Doc "<html xmlns=\"http://www.w3.org/1999/xhtml\"><head>\n	<title></title>\n</head>\n<body>&nbsp;</body>\n</html>"
-    doc.setElement('/html', 3, "<body>\n<p>h</p>\n</body>")
+    doc.setElement('/x:html', 3, "<body>\n<p>h</p>\n</body>")
     test.deepEqual '<html xmlns=\"http://www.w3.org/1999/xhtml\"><head>\n	<title></title>\n</head>\n<body>\n<p>h</p>\n</body>\n</html>', doc.getText()
     
     test.done()

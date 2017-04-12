@@ -140,7 +140,7 @@ genTests = (type) ->
         
       # Tests with namespaces
       sampleXML = '<html:body xmlns:html="http://a.ns">abc<html:p>123</html:p>def<html:p>456</html:p></html:body>'
-      test.deepEqual '<html:body xmlns:html="http://a.ns">abc<html:p>123</html:p>def<html:p>456</html:p><html:p>789</html:p></html:body>', type.apply(sampleXML, [{p:[4], ei:'<html:p>789</html:p>'}])
+      test.deepEqual '<html:body xmlns:html="http://a.ns">abc<html:p>123</html:p>def<html:p>456</html:p><html:p xmlns:html="http://a.ns">789</html:p></html:body>', type.apply(sampleXML, [{p:[4], ei:'<html:p xmlns:html="http://a.ns">789</html:p>'}])
       
       # Test deletes
       test.deepEqual '<body><p>123</p></body>', type.apply('<body><p>456</p><p>123</p></body>', [{p:[0], ed:'p'}])
