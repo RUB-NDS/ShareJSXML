@@ -1,7 +1,7 @@
 fs     = require 'fs'
 path   = require 'path'
 os     = require 'os'
-{exec} = require 'child_process'
+{exec, execSync, spawn} = require 'child_process'
 
 # Gain access through PATH to all binaries added by `npm install`
 # Without this, 'cake test' does not work
@@ -10,13 +10,10 @@ path_sep = if os.platform() == 'win32' then ";" else ":"
 process.env.PATH = "#{npm_bin}#{path_sep}#{process.env.PATH}"
 
 task 'package', 'Convert package.coffee to package.json', ->
-  exec "coffee --compile --bare package.coffee", (err, stdout, stderr) ->
-    if err
-      console.log stdout + stderr
-      throw err 
-    pkgInfo = require './package.js'
-    fs.writeFileSync('package.json', JSON.stringify(pkgInfo, null, 2))
-    exec "rm package.js"
+  execSync "coffee --compile --bare package.coffee"
+  pkgInfo = require './package.js'
+  fs.writeFileSync('package.json', JSON.stringify(pkgInfo, null, 2))
+  execSync "rm package.js"
 
 task 'test', 'Run all tests', (options) ->
   console.log 'Running tests... (is your webclient up-to-date and nodeunit installed?)'
@@ -27,10 +24,10 @@ task 'test', 'Run all tests', (options) ->
 task 'build', 'Build the .js files', ->
   invoke 'package'
   console.log 'Compiling Coffee from src to lib'
-  exec "coffee --compile --output lib/ src/"
+  execSync "coffee --compile --output lib/ src/"
 
 task 'webclient', 'Build the web client into one file', ->
-  exec "mkdir -p webclient" 
+  execSync "mkdir -p webclient" 
   compile client, 'webclient/share'
   buildtype 'json'
   buildtype 'text-tp2'
@@ -44,8 +41,8 @@ task 'webclient', 'Build the web client into one file', ->
       console.log stdout + stderr
       throw err 
     # For backwards compatibility. (The ace.js file used to be called share-ace.js)
-    exec "cp -f webclient/ace.js webclient/share-ace.js"
-    exec "cp -f src/lib-etherpad/* webclient/"
+    execSync "cp -f webclient/ace.js webclient/share-ace.js"
+    execSync "cp -f src/lib-etherpad/* webclient/"
 
 makeUgly = (infile, outfile) ->
   uglify = require('uglify-js')
@@ -57,9 +54,9 @@ expandNames = (names) -> ("src/#{c}.coffee" for c in names).join ' '
 
 compile = (filenames, dest) ->
   filenames = expandNames filenames
-  exec "cat #{filenames} | coffee --compile --stdio > #{dest}.uncompressed.js"
+  execSync "cat #{filenames} | coffee --compile --stdio > #{dest}.uncompressed.js"
   makeUgly "#{dest}.uncompressed.js", "#{dest}.js"
-  #exec "rm #{dest}.uncompressed.js"
+  execSync "rm #{dest}.uncompressed.js"
 
 buildtype = (name) ->
   filenames = ['types/web-prelude']
@@ -75,7 +72,7 @@ buildtype = (name) ->
     filenames.push "types/xml-api"
   
   try
-    fs.access "src/types/#{name}-api.coffee"
+    fs.accessSync "src/types/#{name}-api.coffee"
     filenames.push "types/#{name}-api"
   catch error
     # do nothing
@@ -115,9 +112,10 @@ task 'bump', 'Increase the patch level of the version, -V is optional', (options
     version = versions.join '.'
   console.log "New version is #{version}"
 
-  for file in ["package.coffee", "src/index.coffee", "src/client/web-prelude.coffee"]
-    sed '-i', oldVersion, version, file
-
+  execSync "sed -i -e 's/version: \"#{oldVersion}\"/version: \"#{version}\"/' package.coffee"
+  execSync "sed -i -e \"s/exports.version = '#{oldVersion}'/exports.version = '#{version}'/\" src/index.coffee"
+  execSync "sed -i -e \"s/'version': '#{oldVersion}'/'version': '#{version}'/\" src/client/web-prelude.coffee"
+  
   invoke "package"
   invoke "build"
   invoke "webclient"
