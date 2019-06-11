@@ -27,7 +27,7 @@
     "xpath": "0.0.27"
   },
   "devDependencies": {
-    "express": "~ 3.x",
+    "express": "~4",
     "optimist": ">= 0.2.4",
     "nodeunit": "^0.11.3",
     "uglify-js": "~2.7",

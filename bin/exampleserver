@@ -6,6 +6,7 @@
 // It demonstrates a few techniques to get different application behaviour.
 
 require('coffee-script');
+require('coffee-script/register')
 var express = require('express'),
   sharejs = require('../src'),
   hat = require('hat').rack(32, 36);

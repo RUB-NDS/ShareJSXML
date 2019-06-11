@@ -51,7 +51,7 @@ module.exports =
   # Developer dependencies
   devDependencies:
     # Example server
-    express: "~ 3.x"
+    express: "~4"
     optimist: ">= 0.2.4"
 
     # Tests
