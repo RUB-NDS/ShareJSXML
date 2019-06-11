@@ -18,20 +18,20 @@
     "socket.io": "~0.8",
     "socket.io-client": "~0.8",
     "browserchannel": "~1",
-    "ws": "~1",
+    "ws": "~3.3.1",
     "connect": "<3.x",
-    "request": ">= 2.1.1",
+    "request": "^2.88.0",
     "coffee-script": "~1",
     "hat": "*",
     "xmldom": "0.1.27",
-    "xpath": ">=0.0.23"
+    "xpath": "0.0.27"
   },
   "devDependencies": {
     "express": "~ 3.x",
     "optimist": ">= 0.2.4",
-    "nodeunit": "*",
+    "nodeunit": "^0.11.3",
     "uglify-js": "~2.7",
-    "websocket": "*"
+    "websocket": "^1.0.28"
   },
   "engine": "node >= 0.6",
   "main": "index.js",

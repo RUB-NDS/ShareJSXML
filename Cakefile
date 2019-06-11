@@ -56,7 +56,7 @@ compile = (filenames, dest) ->
   filenames = expandNames filenames
   execSync "cat #{filenames} | coffee --compile --stdio > #{dest}.uncompressed.js"
   makeUgly "#{dest}.uncompressed.js", "#{dest}.js"
-  execSync "rm #{dest}.uncompressed.js"
+  #execSync "rm #{dest}.uncompressed.js"
 
 buildtype = (name) ->
   filenames = ['types/web-prelude']

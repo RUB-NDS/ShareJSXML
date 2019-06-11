@@ -28,13 +28,13 @@ module.exports =
     "socket.io": "~0.8"
     "socket.io-client": "~0.8"
     browserchannel: "~1"
-    ws: "~1"
+    ws: "~3.3.1"
 
     # Server works with v1 or v2
     connect: "<3.x"
 
     # CouchDB Backend
-    request: ">= 2.1.1"
+    request: "^2.88.0"
 
     # Prevent upgrade failures like v1.3. Bump this when tested.
     "coffee-script": "~1"
@@ -46,7 +46,7 @@ module.exports =
     xmldom: "0.1.27"
     
     #XPath processing
-    xpath: ">=0.0.23"
+    xpath: "0.0.27"
 
   # Developer dependencies
   devDependencies:
@@ -55,13 +55,13 @@ module.exports =
     optimist: ">= 0.2.4"
 
     # Tests
-    nodeunit: "*"
+    nodeunit: "^0.11.3"
 
     # Javascript compression
     "uglify-js": "~2.7"
 
     # SockJS
-    "websocket": "*"
+    "websocket": "^1.0.28"
 
   engine: "node >= 0.6"
 

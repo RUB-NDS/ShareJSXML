@@ -17,6 +17,8 @@ wrapSession = (conn) ->
       wrapper.emit 'message', parsed
     catch error
       console.log "Received data parsing error #{error}"
+  conn.on 'connection', (ws, req) ->
+    ws.upgradeReq = req
 
   wrapper.headers = conn.upgradeReq.headers
   # TODO - I don't think this is the right way to get the address
@@ -26,4 +28,6 @@ wrapSession = (conn) ->
 exports.attach = (server, createAgent, options) ->
   options.prefix or= '/websocket'
   wss = new WebSocketServer {server: server, path: options.prefix}
-  wss.on 'connection', (conn) -> sessionHandler wrapSession(conn), createAgent
+  wss.on 'connection', (conn, req) ->
+    conn.upgradeReq = req
+    sessionHandler wrapSession(conn), createAgent
