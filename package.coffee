@@ -30,8 +30,9 @@ module.exports =
     browserchannel: "~1"
     ws: "~3.3.1"
 
-    # Server works with v1 or v2
-    connect: "<3.x"
+    connect: "~3"
+    "serve-static": "^1.14.1"
+    "connect-route": "^0.1.5"
 
     # CouchDB Backend
     request: "^2.88.0"

@@ -1,6 +1,7 @@
 # The server module...
 
 connect = require 'connect'
+serveStatic = require 'serve-static'
 http = require 'http'
 
 Model = require './model'
@@ -38,7 +39,7 @@ create.attach = attach = (server, options, model = createModel(options)) ->
   server.model = model
   server.on 'close', -> model.closeDb()
 
-  server.use options.staticpath, connect.static("#{__dirname}/../../webclient") if options.staticpath != null
+  server.use options.staticpath, serveStatic("#{__dirname}/../../webclient") if options.staticpath != null
 
   createAgent = require('./useragent') model, options
 

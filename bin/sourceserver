@@ -1,6 +1,8 @@
 #!/usr/bin/env coffee
 
 connect = require 'connect'
+serveStatic = require 'serve-static'
+connectRoute = require 'connect-route'
 sharejs = require '../src/server'
 fs = require 'fs'
 path = require 'path'
@@ -27,9 +29,7 @@ atomicallyWriteFile = (file, snapshot) ->
 
 
 server = connect(
-  connect.favicon(),
-  connect.static(__dirname + '/../examples'),
-  connect.router (app) ->
+  connectRoute (app) ->
 
     app.get '/pad/*', (req, res, next) ->
       file = req.params[0]
@@ -61,6 +61,8 @@ server = connect(
       res.end()
 
 )
+
+server.use(serveStatic(__dirname + '/../examples'))
 
 # Change to this to enable persistance
 options = {db: {type:'memory'}}
