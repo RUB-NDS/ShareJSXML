@@ -9,14 +9,14 @@ module.exports =
   version: "0.10.1"
   description: "A database for concurrent XML document editing"
   keywords: [
-  	"operational transformation"
-  	"ot"
-  	"concurrent"
-  	"collaborative"
-  	"database"
-  	"server"
+    "operational transformation"
+    "ot"
+    "concurrent"
+    "collaborative"
+    "database"
+    "server"
     "XML"
-  ]
+    ]
 
   homepage: ""
 
@@ -25,8 +25,8 @@ module.exports =
   dependencies:
     # Transports
     sockjs: ">= 0.3.1"
-    "socket.io": "~0.9.7"
-    "socket.io-client": "~0.9.7"
+    "socket.io": "^2.2.0"
+    "socket.io-client": "^2.2.0"
     browserchannel: "~1"
     ws: "~3.3.1"
 

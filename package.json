@@ -15,8 +15,8 @@
   "author": "Joseph Gentle <josephg@gmail.com> and Dennis Felsch <dennis.felsch@ruhr-uni-bochum.de>",
   "dependencies": {
     "sockjs": ">= 0.3.1",
-    "socket.io": "~0.9.7",
-    "socket.io-client": "~0.9.7",
+    "socket.io": "^2.2.0",
+    "socket.io-client": "^2.2.0",
     "browserchannel": "~1",
     "ws": "~3.3.1",
     "connect": "~3",
