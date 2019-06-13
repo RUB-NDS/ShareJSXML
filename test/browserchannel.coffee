@@ -21,7 +21,8 @@ ANYOBJECT = new Object
 expectData = (socket, expectedData, callback) ->
   expectedData = [expectedData] unless Array.isArray expectedData
 
-  socket.onmessage = (data) ->
+  socket.onmessage = (message) ->
+    data = message.data
     expected = expectedData.shift()
     if expected.meta == ANYOBJECT
       assert.strictEqual typeof data.meta, 'object'
@@ -30,7 +31,7 @@ expectData = (socket, expectedData, callback) ->
     assert.deepEqual expected, data
 
     if expectedData.length == 0
-      socket.onmessage = (data) -> console.warn 'xxxx', data
+      socket.onmessage = (message) -> console.warn 'xxxx', message.data
       callback()
 
 module.exports = testCase
@@ -53,7 +54,8 @@ module.exports = testCase
 
         # Open a new browserchannel session to the server
         @socket = new BCSocket "http://localhost:#{@server.address().port}/channel"
-        @socket.onmessage = (data) =>
+        @socket.onmessage = (message) =>
+          data = message.data
           @id = data.auth
           assert.ok @id
           callback()
@@ -207,7 +209,8 @@ module.exports = testCase
         test.done()
 
   'not be sent your own ops back': (test) ->
-#    @socket.onmessage = (data) ->
+#    @socket.onmessage = (message) ->
+#      data = message.data
 #      test.notDeepEqual data.op, {position:0, text:'hi'} if data.op?
 #
     @socket.send {doc:@name, open:true, create:true, type:'simple'}
@@ -277,7 +280,8 @@ module.exports = testCase
             test.fail error if error
 
       # All the ops that come through the socket should have the doc name set.
-      @socket.onmessage = (data) =>
+      @socket.onmessage = (message) =>
+        data = message.data
         test.strictEqual data.doc?, true
         passPart()
 
@@ -285,7 +289,8 @@ module.exports = testCase
     passPart = makePassPart test, 3
     @socket.send {doc:@name, open:true, create:true, type:'simple'}
     @expect {doc:@name, open:true, create:true, v:0}, =>
-      @socket.onmessage = (data) =>
+      @socket.onmessage = (message) =>
+        data = message.data
         # This time, none of the ops should have the document name set.
         test.strictEqual data.doc?, false
         passPart()
@@ -303,7 +308,8 @@ module.exports = testCase
 
   'creating a document with a null doc name creates a new doc': (test) ->
     @socket.send {doc:null, create:true, type:'simple'}
-    @socket.onmessage = (data) =>
+    @socket.onmessage = (message) =>
+      data = message.data
       test.strictEqual data.create, true
       test.equal typeof data.doc, 'string'
       test.ok data.doc.length > 8
@@ -430,7 +436,8 @@ module.exports = testCase
     console.log 'Waiting for a timeout... this usually takes about 10 seconds'
     # This test should be rewritten to use timerstub.
     socket = new BCSocket "http://localhost:#{@server.address().port}/channel"
-    socket.onmessage = (data) ->
+    socket.onmessage = (message) ->
+      data = message.data
       test.strictEqual data.auth, null
       test.strictEqual data.error, 'Timeout waiting for client auth message'
     socket.onclose = () ->

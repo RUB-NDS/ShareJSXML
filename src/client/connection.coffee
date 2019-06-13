@@ -50,7 +50,8 @@ class Connection
       when 'websocket' then new ReconnectingWebSocket(host)
       else new BCSocket(host, reconnect:true)
 
-    @socket.onmessage = (msg) =>
+    @socket.onmessage = (message) =>
+      msg = message.data
       msg = JSON.parse(msg.data) if socketImpl in ['sockjs', 'websocket']
       if msg.auth is null
         # Auth failed.
