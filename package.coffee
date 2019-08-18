@@ -77,7 +77,7 @@ module.exports =
   scripts:
     build: "cake build"
     test: "cake test"
-    prepublish: "cake webclient"
+    prepare: "cake webclient"
 
   license: "MIT"
   
