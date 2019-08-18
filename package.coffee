@@ -62,7 +62,7 @@ module.exports =
     "uglify-js": "~2.7"
 
     # SockJS
-    "websocket": "^1.0.28"
+    "websocket": "^1.0.29"
 
   engine: "node >= 0.6"
 
