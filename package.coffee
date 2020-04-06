@@ -24,9 +24,9 @@ module.exports =
 
   dependencies:
     # Transports
-    sockjs: ">= 0.3.1"
-    "socket.io": "^2.2.0"
-    "socket.io-client": "^2.2.0"
+    sockjs: "^0.3.20"
+    "socket.io": "^2.3.0"
+    "socket.io-client": "^2.3.0"
     browserchannel: "^2.1.0"
     ws: "~3.3.1"
 
@@ -35,7 +35,7 @@ module.exports =
     "connect-route": "^0.1.5"
 
     # CouchDB Backend
-    request: "^2.88.0"
+    request: "^2.88.2"
 
     # Prevent upgrade failures like v1.3. Bump this when tested.
     "coffee-script": "~1"
@@ -62,7 +62,7 @@ module.exports =
     "uglify-js": "~2.7"
 
     # SockJS
-    "websocket": "^1.0.29"
+    "websocket": "^1.0.31"
 
   engine: "node >= 0.6"
 
