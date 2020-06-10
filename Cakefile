@@ -17,8 +17,7 @@ task 'package', 'Convert package.coffee to package.json', ->
 
 task 'test', 'Run all tests', (options) ->
   console.log 'Running tests... (is your webclient up-to-date and nodeunit installed?)'
-  exec 'nodeunit tests.coffee', (err, stdout, stderr) ->
-    console.log stderr + stdout
+  spawn 'nodeunit', ['tests.coffee'], stdio: 'inherit'
 
 # This is only needed to be able to refer to the line numbers of crashes
 task 'build', 'Build the .js files', ->
