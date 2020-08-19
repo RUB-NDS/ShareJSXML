@@ -1,5 +1,6 @@
 ShareJSXML
 =======
+![Node.js CI](https://github.com/RUB-NDS/ShareJSXML/workflows/Node.js%20CI/badge.svg?branch=master)
 
 This is a little server & client library to allow concurrent editing. The server runs on NodeJS and the client works in NodeJS or a web browser.
 
