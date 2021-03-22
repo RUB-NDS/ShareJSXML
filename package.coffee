@@ -25,7 +25,7 @@ module.exports =
   dependencies:
     # Transports
     sockjs: "^0.3.21"
-    "socket.io": "^2.3.0"
+    "socket.io": "^2.4.0"
     "socket.io-client": "^2.3.0"
     browserchannel: "^2.1.0"
     ws: "~3.3.1"
@@ -44,7 +44,7 @@ module.exports =
     hat: "*"
     
     #XML parsing and serializing
-    xmldom: "0.1.27"
+    xmldom: "0.5.0"
     
     #XPath processing
     xpath: "0.0.27"
