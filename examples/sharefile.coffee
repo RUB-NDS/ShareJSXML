@@ -1,15 +1,13 @@
 # This script watches for changes in a document and constantly resaves a file
 # with the document's contents.
 
-#client = require('share').client
 client = require('../src').client
 fs = require('fs')
 
-argv = require('optimist')
-	.usage('Usage: $0 -d docname [--url URL] [-f filename]')
-	.default('d', 'hello')
-	.default('url', 'http://localhost:8000/channel')
-	.argv
+argv = require('minimist')(process.argv.slice(2), {
+  string: [ 'd', 'url' , 'f'],
+  default: { d: 'hello', url: 'http://localhost:8000/channel' },
+})
 
 filename = argv.f || argv.d
 

@@ -7,11 +7,10 @@ sharejs = require '../src/server'
 fs = require 'fs'
 path = require 'path'
 
-argv = require('optimist').
-  usage("Usage: $0 [-p portnum]").
-  default('p', 8000).
-  alias('p', 'port').
-  argv
+argv = require('minimist')(process.argv.slice(2), {
+  default: { p: 8000 },
+  alias: {p: 'port'}
+})
 
 fileVersions = {}
 

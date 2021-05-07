@@ -53,7 +53,7 @@ module.exports =
   devDependencies:
     # Example server
     express: "~4"
-    optimist: ">= 0.2.4"
+    minimist: "^1.2.5"
 
     # Tests
     nodeunit: "^0.11.3"
