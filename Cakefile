@@ -1,7 +1,7 @@
 fs     = require 'fs'
 path   = require 'path'
 os     = require 'os'
-{exec, execSync, spawn} = require 'child_process'
+{exec, execSync, spawnSync} = require 'child_process'
 
 # Gain access through PATH to all binaries added by `npm install`
 # Without this, 'cake test' does not work
@@ -17,7 +17,9 @@ task 'package', 'Convert package.coffee to package.json', ->
 
 task 'test', 'Run all tests', (options) ->
   console.log 'Running tests... (is your webclient up-to-date and nodeunit installed?)'
-  spawn 'nodeunit', ['tests.coffee'], stdio: 'inherit'
+  result = spawnSync 'nodeunit', ['tests.coffee'], stdio: 'inherit'
+  if result.status != 0
+    throw new Exception("Errors during tests")
 
 # This is only needed to be able to refer to the line numbers of crashes
 task 'build', 'Build the .js files', ->
