@@ -28,7 +28,7 @@ module.exports =
     "socket.io": "^2.5.0"
     "socket.io-client": "^2.3.1"
     browserchannel: "^2.1.0"
-    ws: "~3.3.1"
+    ws: "~5.2.4"
 
     connect: "~3"
     "serve-static": "^1.14.1"
