@@ -26,7 +26,7 @@ module.exports =
     # Transports
     sockjs: "^0.3.21"
     "socket.io": "^4.8.0"
-    "socket.io-client": "^2.3.1"
+    "socket.io-client": "^4.8.3"
     browserchannel: "^2.1.0"
     ws: "~5.2.5"
 
